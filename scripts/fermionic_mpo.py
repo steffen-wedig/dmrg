@@ -34,5 +34,5 @@ print(f"fraction of Non zero elements in the two electron integrals: {N_non_zero
 
 
 #print(h1e.shape)
-one_e_mpo = create_local_mpo_tensors(h1e,h2e)
+mpo = create_local_mpo_tensors(h1e,h2e_re,N_sites=N_orbitals)
 #remove the zero elementsö

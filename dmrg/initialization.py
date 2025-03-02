@@ -56,6 +56,22 @@ def single_site_operators():
 
     return c_dag_up, c_up, c_dag_down, c_down 
 
+
+
+def get_operators_for_spin(spin):
+
+    c_dag_up, c_up, c_dag_down, c_down = single_site_operators()
+
+    if spin == "up":
+        return c_dag_up, c_up
+    
+    if spin == "down":
+        return c_dag_down, c_down
+
+
+
+
+
 def construct_initial_one_state_hamiltonian(h1e, h2e):
     c_dag_up, c_up, c_dag_down, c_down = single_site_operators()
 

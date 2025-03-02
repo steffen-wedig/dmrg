@@ -1,95 +1,86 @@
 import numpy as np
-from dmrg.initialization import single_site_operators
+from dmrg.initialization import single_site_operators, get_operators_for_spin
 
 
-def create_local_mpo_tensors(one_el_integrals,two_el_integrals):
+def create_local_mpo_tensors(one_el_integrals,two_el_integrals,N_sites,dim=4):
+    
+    total_N_ops = 2*N_sites **2 + 4* N_sites**4
 
-    mpo = []
+    mpo = np.zeros(shape = (N_sites, total_N_ops,dim,dim))
 
-    N_sites = one_el_integrals.shape[0]
+    # initialize all single-site operators to identity
+    mpo[:] = np.eye(dim)
 
-    for site_idx in range(N_sites):
-        
-        one_el_ops = get_one_electron_ops(one_el_integrals,site_idx)
+    one_e_indices = np.ndindex(one_el_integrals.shape)
 
 
-        two_el_ops = get_two_electron_ops(two_el_integrals, site_idx)
+    ## Spin up 1 e terms
+    add_one_eletron_interactions(mpo,one_e_indices,one_el_integrals,0,"up")
 
-        local_ops = [*one_el_ops, *two_el_ops]
-        
-        mpo.append(local_ops)
+    #Spin down 1 e terms 
+    add_one_eletron_interactions(mpo,one_e_indices,one_el_integrals,N_sites**2,"down")
+
+    two_e_indices = np.ndindex(two_el_integrals.shape)
+
+    add_two_eletron_interactions(mpo,two_e_indices,two_el_integrals,start = 2*(N_sites**2),sigma_spin="up",tau_spin="up")
+
+    add_two_eletron_interactions(mpo,two_e_indices,two_el_integrals,start = 2*(N_sites**2)+N_sites**4,sigma_spin="up",tau_spin="down")
+
+    add_two_eletron_interactions(mpo,two_e_indices,two_el_integrals,start = 2*(N_sites**2)+2*(N_sites**4),sigma_spin="down",tau_spin="up")
+
+    add_two_eletron_interactions(mpo,two_e_indices,two_el_integrals,start = 2*(N_sites**2)+3*(N_sites**4),sigma_spin="down",tau_spin="down")
+
 
     return mpo
 
 
-def get_one_electron_ops(one_el_integrals, site_idx):
-
-    one_el_integrals_vec = one_el_integrals.reshape(
-        -1,
-    )
-
-    N_sites = one_el_integrals.shape[0]
-    N_1e_per_spin = N_sites**2
-    N_1e = 2 * N_1e_per_spin
-    c_dag_up, c_up, c_dag_down, c_down = single_site_operators()
-
-    local_op = get_identity_local_op(N_1e)
-
-    if site_idx == 0:
-        for i in range(N_1e_per_spin):
-            local_op[i] *= one_el_integrals_vec[i]
-        for i in range(N_1e_per_spin):
-            local_op[i + N_1e_per_spin] *= one_el_integrals_vec[i]
-
-    creation_op_indices = list(range(site_idx * N_sites, N_sites * (site_idx + 1)))
-
-    annihilation_op_indices = list(range(site_idx, N_1e_per_spin, N_sites))
-    for creation_op_idx in creation_op_indices:
-        local_op[creation_op_idx] = local_op[creation_op_idx] @ c_dag_up
-    for creation_op_idx in creation_op_indices:
-        local_op[creation_op_idx + N_1e_per_spin] = (
-            local_op[creation_op_idx + N_1e_per_spin] @ c_dag_down
-        )
-    for annihilation_op_idx in annihilation_op_indices:
-        local_op[annihilation_op_idx] = local_op[annihilation_op_idx] @ c_up
-    for annihilation_op_idx in annihilation_op_indices:
-        local_op[annihilation_op_idx + N_1e_per_spin] = (
-            local_op[annihilation_op_idx + N_1e_per_spin] @ c_down
-        )
-
-    return local_op
+  
 
 
-def get_two_electron_ops(two_electron_integral, site_idx):
+def add_one_eletron_interactions(mpo,index_array,one_electron_integrals, start,sigma_spin):
+
+    c_dag_sigma, c_sigma = get_operators_for_spin(sigma_spin)
 
 
-    two_electron_integral_vec = two_electron_integral.reshape(-1,)
+    for interaction_counter,indices in enumerate(index_array,start):
+        
+        # Multiply the value into the first site operator
+        mpo[0,interaction_counter,:,:] = mpo[0,interaction_counter,:,:]*one_electron_integrals[indices]
 
-    N_sites = two_electron_integral.shape[0]
-    N_2e_per_spin = N_sites **4
-    N_2e = 2* N_2e_per_spin
+        creation_op_site_index = indices[0]
 
+        mpo[creation_op_site_index,interaction_counter,:,:] = mpo[creation_op_site_index,interaction_counter,:,:] @ c_dag_sigma
 
-    assert (two_electron_integral.ndim == 2)
+        annihilation_op_site_index = indices[1]
 
-
-    local_op = get_identity_local_op(N_ops=N_2e)
-
-    if site_idx == 0:
-        for i in range(N_2e_per_spin):
-            local_op[i] *= two_electron_integral_vec[i]
-        for i in range(N_2e_per_spin):
-            local_op[i + N_2e_per_spin] *= two_electron_integral_vec[i]
-            
-
-    creation_ops = list(range(site_idx * N_sites, N_sites * (site_idx + 1)))+ list(range(site_idx * N_sites, N_sites * (site_idx + 1)))
+        mpo[annihilation_op_site_index,interaction_counter,:,:] = mpo[annihilation_op_site_index,interaction_counter,:,:] @ c_sigma
 
 
 
+def add_two_eletron_interactions(mpo,index_array,two_electron_integrals, start,sigma_spin,tau_spin):
+    
+    c_dag_sigma, c_sigma = get_operators_for_spin(sigma_spin)
 
-    return local_op
+    c_dag_tau, c_tau = get_operators_for_spin(tau_spin)
 
-def get_identity_local_op(N_ops):
-    I = np.eye(4)
-    local_op = [I] * N_ops
-    return local_op
+    for interaction_counter, indices in enumerate(index_array,start = start):
+        
+        # Multiply the value into the first site operator
+        mpo[0,interaction_counter,:,:] = mpo[0,interaction_counter,:,:]*two_electron_integrals[indices]
+        
+        creation_op_site_index_0 = indices[0]
+
+        mpo[creation_op_site_index_0,interaction_counter,:,:] = mpo[creation_op_site_index_0,interaction_counter,:,:] @ c_dag_sigma
+
+        creation_op_site_index_1 = indices[1]
+
+        mpo[creation_op_site_index_1,interaction_counter,:,:] = mpo[creation_op_site_index_1,interaction_counter,:,:] @ c_dag_tau
+
+        annihilation_op_site_index_0 = indices[2]
+
+        mpo[annihilation_op_site_index_0,interaction_counter,:,:] = mpo[annihilation_op_site_index_0,interaction_counter,:,:]@ c_tau
+
+        annihilation_op_site_index_1 = indices[3]
+
+        mpo[annihilation_op_site_index_1,interaction_counter,:,:] = mpo[annihilation_op_site_index_1,interaction_counter,:,:]@ c_sigma
+
