@@ -27,7 +27,7 @@ def effective_hamiltonian_action(psi, L_env, mpo, R_env, dims):
     #print(mpo.shape) 
     #print(psi_tensor.shape) 
 
-
+    print("Here")
     result = np.einsum("mnopqr,ijm,jqrl,lkn->iopk",mpo,L_env,psi_tensor,R_env)
     return result.ravel()
 

@@ -84,3 +84,19 @@ def add_two_eletron_interactions(mpo,index_array,two_electron_integrals, start,s
 
         mpo[annihilation_op_site_index_1,interaction_counter,:,:] = mpo[annihilation_op_site_index_1,interaction_counter,:,:]@ c_sigma
 
+def reformat_mpo(mpo):
+
+
+    L = mpo.shape[0]
+    num_ops = mpo.shape[1]
+
+    list_mpo = []
+    for i in range(L):
+    
+
+        A = np.zeros((num_ops, num_ops, 4, 4))
+        A[np.arange(num_ops), np.arange(num_ops)] = mpo[i,:,:,:]
+        list_mpo.append(A)
+
+
+    return list_mpo
