@@ -1,6 +1,6 @@
 import numpy as np
 from dmrg.initialization import single_site_operators, get_operators_for_spin
-
+from numpy.linalg import matrix_power
 
 def create_local_mpo_tensors(one_el_integrals,two_el_integrals,N_sites,dim=4):
     
@@ -13,12 +13,11 @@ def create_local_mpo_tensors(one_el_integrals,two_el_integrals,N_sites,dim=4):
 
     one_e_indices = np.ndindex(one_el_integrals.shape)
 
-
     ## Spin up 1 e terms
-    add_one_eletron_interactions(mpo,one_e_indices,one_el_integrals,0,"up")
+    add_one_electron_interactions(mpo,one_e_indices,one_el_integrals,0,"up")
 
     #Spin down 1 e terms 
-    add_one_eletron_interactions(mpo,one_e_indices,one_el_integrals,N_sites**2,"down")
+    add_one_electron_interactions(mpo,one_e_indices,one_el_integrals,N_sites**2,"down")
 
     two_e_indices = np.ndindex(two_el_integrals.shape)
 
@@ -37,10 +36,11 @@ def create_local_mpo_tensors(one_el_integrals,two_el_integrals,N_sites,dim=4):
   
 
 
-def add_one_eletron_interactions(mpo,index_array,one_electron_integrals, start,sigma_spin):
+def add_one_electron_interactions(mpo,index_array,one_electron_integrals, start,sigma_spin):
 
     c_dag_sigma, c_sigma = get_operators_for_spin(sigma_spin)
 
+    F = np.diag([1,-1,-1,1])
 
     for interaction_counter,indices in enumerate(index_array,start):
         
@@ -49,11 +49,11 @@ def add_one_eletron_interactions(mpo,index_array,one_electron_integrals, start,s
 
         creation_op_site_index = indices[0]
 
-        mpo[creation_op_site_index,interaction_counter,:,:] = mpo[creation_op_site_index,interaction_counter,:,:] @ c_dag_sigma
+        mpo[creation_op_site_index,interaction_counter,:,:] = mpo[creation_op_site_index,interaction_counter,:,:] @ matrix_power(F,creation_op_site_index) @ c_dag_sigma
 
         annihilation_op_site_index = indices[1]
 
-        mpo[annihilation_op_site_index,interaction_counter,:,:] = mpo[annihilation_op_site_index,interaction_counter,:,:] @ c_sigma
+        mpo[annihilation_op_site_index,interaction_counter,:,:] = mpo[annihilation_op_site_index,interaction_counter,:,:] @ matrix_power(F,annihilation_op_site_index) @c_sigma
 
 
 
@@ -62,41 +62,50 @@ def add_two_eletron_interactions(mpo,index_array,two_electron_integrals, start,s
     c_dag_sigma, c_sigma = get_operators_for_spin(sigma_spin)
 
     c_dag_tau, c_tau = get_operators_for_spin(tau_spin)
+    F = np.diag([1,-1,-1,1])
+
 
     for interaction_counter, indices in enumerate(index_array,start = start):
         
         # Multiply the value into the first site operator
-        mpo[0,interaction_counter,:,:] = mpo[0,interaction_counter,:,:]*two_electron_integrals[indices]
+        mpo[0,interaction_counter,:,:] = mpo[0,interaction_counter,:,:]*0.5*two_electron_integrals[indices]
         
         creation_op_site_index_0 = indices[0]
 
-        mpo[creation_op_site_index_0,interaction_counter,:,:] = mpo[creation_op_site_index_0,interaction_counter,:,:] @ c_dag_sigma
+        mpo[creation_op_site_index_0,interaction_counter,:,:] = mpo[creation_op_site_index_0,interaction_counter,:,:] @  matrix_power(F,creation_op_site_index_0) @ c_dag_sigma
 
         creation_op_site_index_1 = indices[1]
 
-        mpo[creation_op_site_index_1,interaction_counter,:,:] = mpo[creation_op_site_index_1,interaction_counter,:,:] @ c_dag_tau
+        mpo[creation_op_site_index_1,interaction_counter,:,:] = mpo[creation_op_site_index_1,interaction_counter,:,:] @ matrix_power(F,creation_op_site_index_1) @ c_dag_tau
 
         annihilation_op_site_index_0 = indices[2]
 
-        mpo[annihilation_op_site_index_0,interaction_counter,:,:] = mpo[annihilation_op_site_index_0,interaction_counter,:,:]@ c_tau
+        mpo[annihilation_op_site_index_0,interaction_counter,:,:] = mpo[annihilation_op_site_index_0,interaction_counter,:,:] @ matrix_power(F,annihilation_op_site_index_0) @ c_tau
 
         annihilation_op_site_index_1 = indices[3]
 
-        mpo[annihilation_op_site_index_1,interaction_counter,:,:] = mpo[annihilation_op_site_index_1,interaction_counter,:,:]@ c_sigma
+        mpo[annihilation_op_site_index_1,interaction_counter,:,:] = mpo[annihilation_op_site_index_1,interaction_counter,:,:] @ matrix_power(F,annihilation_op_site_index_1) @ c_sigma
 
 def reformat_mpo(mpo):
-
-
     L = mpo.shape[0]
     num_ops = mpo.shape[1]
 
     list_mpo = []
-    for i in range(L):
+
+    A0 = np.zeros((1,num_ops,4,4))
+    A0[0, np.arange(num_ops)] = mpo[0,:,:,:]
+    list_mpo.append(A0)
+
+    for i in range(1,L-1):
     
 
         A = np.zeros((num_ops, num_ops, 4, 4))
         A[np.arange(num_ops), np.arange(num_ops)] = mpo[i,:,:,:]
         list_mpo.append(A)
 
+    AL = np.zeros((num_ops,1,4,4))
+    AL[np.arange(num_ops),0] = mpo[L-1,:,:,:]
+
+    list_mpo.append(AL)
 
     return list_mpo

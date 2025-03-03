@@ -2,8 +2,8 @@ from dmrg.fermions.mpo import create_local_mpo_tensors, reformat_mpo
 from pyscf import gto, scf, ao2mo
 import numpy as np
 from dmrg.initialization import single_site_operators
-from dmrg.fermions.mps import get_mps_from_occupation_numbers
-
+from dmrg.fermions.mps import get_mps_from_occupation_numbers, get_random_mps
+from dmrg.einsum_optimal_paths import EinsumEvaluator
 
 from dmrg.heisenberg_chain.mps import create_neel_mps, right_canonicalize
 from dmrg.heisenberg_chain.mpo import initialize_heisenberg_mpo
@@ -14,7 +14,7 @@ from dmrg.heisenberg_chain.sweep import precompute_right_environment, right_to_l
 
 mol = gto.M(
     atom = 'H 0 0 0; H 0 0 1.1',  # Adjust bond length if necessary
-    basis = '3-21G',
+    basis = 'cc-pVDZ',
     symmetry = True
 )
 
@@ -49,31 +49,23 @@ init_states = get_initial_states_from_mol_orb_occ(mf.mo_occ)
 print(init_states)
 
 mps = get_mps_from_occupation_numbers(init_states,5)
-
+mps = get_random_mps(L= len(mpo),bond_dimensions=5)
 
 L = len(mps)
 
 R_env = [None] * (L+1)
 
-mps = right_canonicalize(mps)
+einsum_eval = EinsumEvaluator()
 
-for state in mps:
-    print(state.shape)
+mps = right_canonicalize(mps, einsum_eval)
 
-
-R_env = precompute_right_environment(mps,mpo)
-print("Precomputed right")
-for idx, env in enumerate(R_env):
-    if env is None:
-        print(f"{idx}: None")
-    else:
-        print(f"{idx}: {env.shape}")
-        
+R_env = precompute_right_environment(mps,mpo,einsum_eval)
+       
 
 L_env = [None] *(L+1)
 L_env[0-1] = np.array(1.,dtype=complex).reshape(1,1,1)
 
 
 for i in range(0,5):
-    mps, mpo, L_env, R_env = left_to_right_sweep(mps,mpo,L_env, R_env)
-    mps, mpo, L_env, R_env  = right_to_left_sweep(mps,mpo,L_env,R_env)
+    mps, mpo, L_env, R_env = left_to_right_sweep(mps,mpo,L_env, R_env,einsum_eval)
+    mps, mpo, L_env, R_env  = right_to_left_sweep(mps,mpo,L_env,R_env,einsum_eval)

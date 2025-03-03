@@ -1,5 +1,5 @@
 import numpy as np
-
+from dmrg.einsum_optimal_paths import EinsumEvaluator
 def create_neel_mps(L, D):
     """
     Create an MPS for a Neel state on an L-site spin-1/2 chain with bond dimension D.
@@ -46,7 +46,7 @@ def create_neel_mps(L, D):
     
     return mps
 
-def right_canonicalize(mps):
+def right_canonicalize(mps, einsum_eval: EinsumEvaluator):
 
     L = len(mps)
     
@@ -65,7 +65,7 @@ def right_canonicalize(mps):
 
         US = U @ np.diag(S)
 
-        A_new = np.einsum("ijk,kl->ijl",A_prev,US)
+        A_new = einsum_eval("ijk,kl->ijl",A_prev,US)
         mps[i-1]=A_new
 
     return mps

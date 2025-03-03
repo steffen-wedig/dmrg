@@ -3,10 +3,10 @@ import numpy as np
 from scipy.sparse.linalg import LinearOperator
 
 from scipy.sparse import linalg
+from dmrg.einsum_optimal_paths import EinsumEvaluator
 
 
-
-def effective_hamiltonian_action(psi, L_env, mpo, R_env, dims):
+def effective_hamiltonian_action(psi, L_env, mpo, R_env, dims,einsum_eval):
 
 
     # Reshape the input state psi into a tensor with the given dimensions.
@@ -27,11 +27,10 @@ def effective_hamiltonian_action(psi, L_env, mpo, R_env, dims):
     #print(mpo.shape) 
     #print(psi_tensor.shape) 
 
-    print("Here")
-    result = np.einsum("mnopqr,ijm,jqrl,lkn->iopk",mpo,L_env,psi_tensor,R_env)
+    result = einsum_eval("mnopqr,ijm,jqrl,lkn->iopk",mpo,L_env,psi_tensor,R_env)
     return result.ravel()
 
-def construct_effective_hamiltonian_operator(L_env, mpo, R_env, dims):
+def construct_effective_hamiltonian_operator(L_env, mpo, R_env, dims, einsum_eval: EinsumEvaluator):
     """
     Construct a LinearOperator representing the effective Hamiltonian.
     
@@ -50,7 +49,7 @@ def construct_effective_hamiltonian_operator(L_env, mpo, R_env, dims):
     
    
     def matvec(psi):
-        return effective_hamiltonian_action(psi, L_env, mpo, R_env, dims)
+        return effective_hamiltonian_action(psi, L_env, mpo, R_env, dims,einsum_eval)
     
     # Create and return the LinearOperator.
     return LinearOperator((N, N), matvec=matvec, dtype=complex)

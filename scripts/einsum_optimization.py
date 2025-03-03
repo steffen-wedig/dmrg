@@ -1,7 +1,7 @@
 from dmrg.fermions.mpo import create_local_mpo_tensors, reformat_mpo
 from pyscf import gto, scf, ao2mo
 
-from dmrg.einsum_optimal_paths import get_optimal_paths
+from dmrg.einsum_optimal_paths import EinsumEvaluator
 
 
 mol = gto.M(
@@ -24,12 +24,9 @@ mpo = reformat_mpo(mpo)
 import numpy as np
 
 
-contraction = get_optimal_paths("ijkl,jmno->imknlo",mpo[0],mpo[1])
+einsum_eval = EinsumEvaluator()
 
-expr = contraction[f"{mpo[0].shape,mpo[1].shape}"]
-print(expr.path)
 
-W = expr(mpo[0],mpo[1])
+res = einsum_eval("ijkl,jmno->imknlo",mpo[0],mpo[1])
 
-contraction_dict = {}
-
+res = einsum_eval("ijkl,jmno->imknlo",mpo[0],mpo[1])
