@@ -44,7 +44,7 @@ def precompute_right_environment(mps, mpo,einsum_eval: EinsumEvaluator):
     L = len(mps)
 
     R_env = [None] * (L + 1)
-    R_env[L] = np.array(1.0, dtype=complex).reshape((1, 1, 1))
+    R_env[L] = np.array(1.0).reshape((1, 1, 1))
 
     for i in range(L - 1, 1, -1):
         print(i)
@@ -62,7 +62,9 @@ def right_to_left_sweep(mps, mpo, L_env, R_env,einsum_eval):
     L = len(mps)
 
     evs = []
-    for i in range(L - 1, 1, -1):
+    for i in range(L - 1, 0, -1):
+        print(f"Step {i}")
+
         M = combine_sites(mps[i - 1], mps[i],einsum_eval)
 
         dims = M.shape
@@ -113,8 +115,8 @@ def left_to_right_sweep(mps, mpo, L_env, R_env,einsum_eval : EinsumEvaluator):
 
     L = len(mps)
     Evs = []
-    for i in range(0,L-2):
-
+    for i in range(0,L-1):
+        print(f"Step {i}")
         M = combine_sites(mps[i], mps[i+1],einsum_eval)
         dims = M.shape
 

@@ -1,6 +1,8 @@
 import numpy as np
 from dmrg.initialization import single_site_operators, get_operators_for_spin
 from numpy.linalg import matrix_power
+import sparse
+from dmrg.einsum_optimal_paths import EinsumEvaluator
 
 def create_local_mpo_tensors(one_el_integrals,two_el_integrals,N_sites,dim=4):
     
@@ -72,7 +74,7 @@ def add_two_eletron_interactions(mpo,index_array,two_electron_integrals, start,s
         
         creation_op_site_index_0 = indices[0]
 
-        mpo[creation_op_site_index_0,interaction_counter,:,:] = mpo[creation_op_site_index_0,interaction_counter,:,:] @  matrix_power(F,creation_op_site_index_0) @ c_dag_sigma
+        mpo[creation_op_site_index_0,interaction_counter,:,:] = mpo[creation_op_site_index_0,interaction_counter,:,:] @ matrix_power(F,creation_op_site_index_0) @ c_dag_sigma
 
         creation_op_site_index_1 = indices[1]
 
@@ -97,8 +99,6 @@ def reformat_mpo(mpo):
     list_mpo.append(A0)
 
     for i in range(1,L-1):
-    
-
         A = np.zeros((num_ops, num_ops, 4, 4))
         A[np.arange(num_ops), np.arange(num_ops)] = mpo[i,:,:,:]
         list_mpo.append(A)
@@ -109,3 +109,99 @@ def reformat_mpo(mpo):
     list_mpo.append(AL)
 
     return list_mpo
+
+def reformat_mpo_sparse(mpo):
+    """
+    Reformats an MPO tensor into a list of sparse COO arrays without creating large dense arrays.
+    
+    The MPO input has shape (L, num_ops, 4, 4). For:
+      - A0 (first block): shape (1, num_ops, 4, 4)
+      - Intermediate blocks (i = 1 to L-2): shape (num_ops, num_ops, 4, 4) with nonzero diagonal blocks
+      - AL (last block): shape (num_ops, 1, 4, 4)
+    
+    Instead of initializing full dense arrays, we directly create coordinate arrays (for indices)
+    and corresponding data arrays (for values) for the nonzero entries.
+    """
+    L, num_ops, d1, d2 = mpo.shape  # d1 and d2 are both 4 in your case.
+    list_mpo = []
+
+    # --- First Block: A0 ---
+    # Shape: (1, num_ops, 4, 4)
+    shape0 = (1, num_ops, d1, d2)
+    coords_list = []
+    data_list = []
+    # Only nonzero entries come from mpo[0, :, :, :]
+    for k in range(num_ops):
+        for r in range(d1):
+            for c in range(d2):
+                # Coordinate: (0, k, r, c)
+                coords_list.append((0, k, r, c))
+                data_list.append(mpo[0, k, r, c])
+    coords_arr = np.array(coords_list).T  # Transpose to shape (4, num_entries)
+    A0 = sparse.COO(coords_arr, data_list, shape=shape0)
+    list_mpo.append(A0)
+
+    # --- Intermediate Blocks ---
+    # For each intermediate MPO tensor: shape (num_ops, num_ops, 4, 4)
+    # Only the diagonal blocks are nonzero: for each k, at position (k, k, :, :)
+    for i in range(1, L-1):
+        shape_i = (num_ops, num_ops, d1, d2)
+        coords_list = []
+        data_list = []
+        for k in range(num_ops):
+            for r in range(d1):
+                for c in range(d2):
+                    # Only fill the diagonal block at (k, k, :, :)
+                    coords_list.append((k, k, r, c))
+                    data_list.append(mpo[i, k, r, c])
+        coords_arr = np.array(coords_list).T
+        A = sparse.COO(coords_arr, data_list, shape=shape_i)
+        list_mpo.append(A)
+
+    # --- Last Block: AL ---
+    # Shape: (num_ops, 1, 4, 4)
+    shapeL = (num_ops, 1, d1, d2)
+    coords_list = []
+    data_list = []
+    for k in range(num_ops):
+        for r in range(d1):
+            for c in range(d2):
+                # Coordinate: (k, 0, r, c)
+                coords_list.append((k, 0, r, c))
+                data_list.append(mpo[L-1, k, r, c])
+    coords_arr = np.array(coords_list).T
+    AL = sparse.COO(coords_arr, data_list, shape=shapeL)
+    list_mpo.append(AL)
+
+    return list_mpo
+
+
+
+
+def contract_expectation(mps, mpo,einsum_eval : EinsumEvaluator):
+    # Initialize left environment as a scalar wrapped in a tensor of shape (1, 1, 1)
+    L = np.array([[[1.0]]]) # shape (1, 1, 1)
+    
+    # Loop over each site
+    i=0
+    for A, W in zip(mps, mpo):
+        print(i)
+        # A has shape (chi_left, d, chi_right)
+        # W has shape (w_left, w_right, d, d)
+        # L has shape (chi_left, chi_left, w_left)
+        #
+        # We want to update L to a new tensor L_new with shape (chi_right, chi_right, w_right)
+        #
+        # Contraction (using explicit index labels):
+        #   L[a, b, p] · A[a, s, i] · A*[b, s', j] · W[p, q, s, s']
+        #
+        # The resulting tensor L_new[i, j, q] is computed as:
+        print(type(W), type(A),type(L))
+        L = einsum_eval("ojlm,nli,npo,pmk->ikj", W, A.conj(),L,A)
+
+        i = i+1
+        # Now, L has shape (chi_right, chi_right, w_right)
+    
+    # At the end, L should have shape (1, 1, 1) (i.e., a scalar wrapped in a tensor)
+    energy = L.squeeze()  # remove singleton dimensions to get a scalar
+    return energy

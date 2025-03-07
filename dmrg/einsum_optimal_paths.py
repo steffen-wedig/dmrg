@@ -5,9 +5,10 @@ from typing import Callable
 
 class EinsumEvaluator():
 
-    def __init__(self):
+    def __init__(self,backend):
 
         self.einsum_contractions = {}
+        self.backend = backend
 
     def __call__(self, einsum_str : str, *operators):
         shapes = tuple(op.shape for op in operators)

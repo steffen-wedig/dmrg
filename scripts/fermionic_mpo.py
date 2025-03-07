@@ -1,4 +1,4 @@
-from dmrg.fermions.mpo import create_local_mpo_tensors, reformat_mpo
+from dmrg.fermions.mpo import create_local_mpo_tensors, reformat_mpo, reformat_mpo_sparse
 from pyscf import gto, scf, ao2mo
 import numpy as np
 from dmrg.initialization import single_site_operators
@@ -13,8 +13,8 @@ from dmrg.heisenberg_chain.sweep import precompute_right_environment, right_to_l
 
 
 mol = gto.M(
-    atom = 'H 0 0 0; H 0 0 1.1',  # Adjust bond length if necessary
-    basis = 'cc-pVDZ',
+    atom = 'H 0 0 0; H 0 0 1.1; H 0 0 2.2; H 0 0 3.3',  # Adjust bond length if necessary
+    basis = '3-21G',
     symmetry = True
 )
 
@@ -40,7 +40,7 @@ print(f"fraction of Non zero elements in the two electron integrals: {N_non_zero
 mpo = create_local_mpo_tensors(h1e,h2e,N_sites=N_orbitals)
 
 #Reformat the MPO
-mpo = reformat_mpo(mpo)
+mpo = reformat_mpo_sparse(mpo)
 
 #remove the zero elementsö
 
@@ -48,8 +48,8 @@ from dmrg.initialization import get_initial_states_from_mol_orb_occ
 init_states = get_initial_states_from_mol_orb_occ(mf.mo_occ)
 print(init_states)
 
-mps = get_mps_from_occupation_numbers(init_states,5)
-mps = get_random_mps(L= len(mpo),bond_dimensions=5)
+mps = get_mps_from_occupation_numbers(init_states,20)
+#mps = get_random_mps(L= len(mpo),bond_dimensions=5)
 
 L = len(mps)
 
@@ -63,7 +63,7 @@ R_env = precompute_right_environment(mps,mpo,einsum_eval)
        
 
 L_env = [None] *(L+1)
-L_env[0-1] = np.array(1.,dtype=complex).reshape(1,1,1)
+L_env[0-1] = np.array(1.).reshape(1,1,1)
 
 
 for i in range(0,5):
