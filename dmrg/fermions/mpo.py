@@ -16,20 +16,20 @@ def create_local_mpo_tensors(one_el_integrals,two_el_integrals,N_sites,dim=4):
     one_e_indices = np.ndindex(one_el_integrals.shape)
 
     ## Spin up 1 e terms
-    add_one_electron_interactions(mpo,one_e_indices,one_el_integrals,0,"up")
+    mpo = add_one_electron_interactions(mpo,one_e_indices,one_el_integrals,0,"up")
 
     #Spin down 1 e terms 
-    add_one_electron_interactions(mpo,one_e_indices,one_el_integrals,N_sites**2,"down")
+    mpo = add_one_electron_interactions(mpo,one_e_indices,one_el_integrals,N_sites**2,"down")
 
     two_e_indices = np.ndindex(two_el_integrals.shape)
 
-    add_two_eletron_interactions(mpo,two_e_indices,two_el_integrals,start = 2*(N_sites**2),sigma_spin="up",tau_spin="up")
+    mpo = add_two_eletron_interactions(mpo,two_e_indices,two_el_integrals,start = 2*(N_sites**2),sigma_spin="up",tau_spin="up")
 
-    add_two_eletron_interactions(mpo,two_e_indices,two_el_integrals,start = 2*(N_sites**2)+N_sites**4,sigma_spin="up",tau_spin="down")
+    mpo = add_two_eletron_interactions(mpo,two_e_indices,two_el_integrals,start = 2*(N_sites**2)+N_sites**4,sigma_spin="up",tau_spin="down")
 
-    add_two_eletron_interactions(mpo,two_e_indices,two_el_integrals,start = 2*(N_sites**2)+2*(N_sites**4),sigma_spin="down",tau_spin="up")
+    mpo = add_two_eletron_interactions(mpo,two_e_indices,two_el_integrals,start = 2*(N_sites**2)+2*(N_sites**4),sigma_spin="down",tau_spin="up")
 
-    add_two_eletron_interactions(mpo,two_e_indices,two_el_integrals,start = 2*(N_sites**2)+3*(N_sites**4),sigma_spin="down",tau_spin="down")
+    mpo = add_two_eletron_interactions(mpo,two_e_indices,two_el_integrals,start = 2*(N_sites**2)+3*(N_sites**4),sigma_spin="down",tau_spin="down")
 
 
     return mpo
@@ -51,12 +51,13 @@ def add_one_electron_interactions(mpo,index_array,one_electron_integrals, start,
 
         creation_op_site_index = indices[0]
 
-        mpo[creation_op_site_index,interaction_counter,:,:] = mpo[creation_op_site_index,interaction_counter,:,:] @ matrix_power(F,creation_op_site_index) @ c_dag_sigma
+        mpo[creation_op_site_index,interaction_counter,:,:] = mpo[creation_op_site_index,interaction_counter,:,:] @ c_dag_sigma
 
         annihilation_op_site_index = indices[1]
 
-        mpo[annihilation_op_site_index,interaction_counter,:,:] = mpo[annihilation_op_site_index,interaction_counter,:,:] @ matrix_power(F,annihilation_op_site_index) @c_sigma
+        mpo[annihilation_op_site_index,interaction_counter,:,:] = mpo[annihilation_op_site_index,interaction_counter,:,:]  @c_sigma
 
+    return mpo
 
 
 def add_two_eletron_interactions(mpo,index_array,two_electron_integrals, start,sigma_spin,tau_spin):
@@ -74,19 +75,23 @@ def add_two_eletron_interactions(mpo,index_array,two_electron_integrals, start,s
         
         creation_op_site_index_0 = indices[0]
 
-        mpo[creation_op_site_index_0,interaction_counter,:,:] = mpo[creation_op_site_index_0,interaction_counter,:,:] @ matrix_power(F,creation_op_site_index_0) @ c_dag_sigma
+        mpo[creation_op_site_index_0,interaction_counter,:,:] = mpo[creation_op_site_index_0,interaction_counter,:,:] @ c_dag_sigma
 
         creation_op_site_index_1 = indices[1]
 
-        mpo[creation_op_site_index_1,interaction_counter,:,:] = mpo[creation_op_site_index_1,interaction_counter,:,:] @ matrix_power(F,creation_op_site_index_1) @ c_dag_tau
+        mpo[creation_op_site_index_1,interaction_counter,:,:] = mpo[creation_op_site_index_1,interaction_counter,:,:] @ c_dag_tau
 
         annihilation_op_site_index_0 = indices[2]
 
-        mpo[annihilation_op_site_index_0,interaction_counter,:,:] = mpo[annihilation_op_site_index_0,interaction_counter,:,:] @ matrix_power(F,annihilation_op_site_index_0) @ c_tau
+        mpo[annihilation_op_site_index_0,interaction_counter,:,:] = mpo[annihilation_op_site_index_0,interaction_counter,:,:] @ c_tau
 
         annihilation_op_site_index_1 = indices[3]
 
-        mpo[annihilation_op_site_index_1,interaction_counter,:,:] = mpo[annihilation_op_site_index_1,interaction_counter,:,:] @ matrix_power(F,annihilation_op_site_index_1) @ c_sigma
+        mpo[annihilation_op_site_index_1,interaction_counter,:,:] = mpo[annihilation_op_site_index_1,interaction_counter,:,:] @ c_sigma
+
+        
+
+    return mpo
 
 def reformat_mpo(mpo):
     L = mpo.shape[0]
@@ -111,22 +116,11 @@ def reformat_mpo(mpo):
     return list_mpo
 
 def reformat_mpo_sparse(mpo):
-    """
-    Reformats an MPO tensor into a list of sparse COO arrays without creating large dense arrays.
-    
-    The MPO input has shape (L, num_ops, 4, 4). For:
-      - A0 (first block): shape (1, num_ops, 4, 4)
-      - Intermediate blocks (i = 1 to L-2): shape (num_ops, num_ops, 4, 4) with nonzero diagonal blocks
-      - AL (last block): shape (num_ops, 1, 4, 4)
-    
-    Instead of initializing full dense arrays, we directly create coordinate arrays (for indices)
-    and corresponding data arrays (for values) for the nonzero entries.
-    """
-    L, num_ops, d1, d2 = mpo.shape  # d1 and d2 are both 4 in your case.
+
+    L, num_ops, d1, d2 = mpo.shape 
     list_mpo = []
 
     # --- First Block: A0 ---
-    # Shape: (1, num_ops, 4, 4)
     shape0 = (1, num_ops, d1, d2)
     coords_list = []
     data_list = []
@@ -203,5 +197,5 @@ def contract_expectation(mps, mpo,einsum_eval : EinsumEvaluator):
         # Now, L has shape (chi_right, chi_right, w_right)
     
     # At the end, L should have shape (1, 1, 1) (i.e., a scalar wrapped in a tensor)
-    energy = L.squeeze()  # remove singleton dimensions to get a scalar
+    energy = L.squeeze() 
     return energy

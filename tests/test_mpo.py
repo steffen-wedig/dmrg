@@ -7,23 +7,9 @@ from dmrg.einsum_optimal_paths import EinsumEvaluator
 from dmrg.fermions.mps import tensor_to_mps
 from dmrg.fermions.mpo import create_local_mpo_tensors, reformat_mpo_sparse, contract_expectation
 
+from dmrg.fermions.mps import mps_norm
 
 
-def mps_norm(mps,einsum_eval):
-        L = np.array([[1.0]])
-        
-        # Loop over each site in the MPS
-        for A in mps:
-            # A has shape (chi_left, d, chi_right)
-            # Update the environment:
-            # Here, we contract L (shape (chi_left, chi_left)) with A and its conjugate.
-            # The contraction sums over the left bond of A and the physical index.
-            L = einsum_eval('ab, asr, bsj->rj', L, A, A.conj())
-            # Now L has shape (chi_right, chi_right)
-        
-        # At the end, L should be a 1x1 matrix; squeeze it to obtain a scalar.
-        norm = L.squeeze()
-        return norm
 
 def test_fermionic_mpo():
     N_hydrogen = 2

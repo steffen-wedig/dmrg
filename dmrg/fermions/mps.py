@@ -1,6 +1,22 @@
 import numpy as np
+from dmrg.einsum_optimal_paths import EinsumEvaluator
 
 
+def mps_norm(mps,einsum_eval):
+        L = np.array([[1.0]])
+        
+        # Loop over each site in the MPS
+        for A in mps:
+            # A has shape (chi_left, d, chi_right)
+            # Update the environment:
+            # Here, we contract L (shape (chi_left, chi_left)) with A and its conjugate.
+            # The contraction sums over the left bond of A and the physical index.
+            L = einsum_eval('ab, asr, bsj->rj', L, A, A.conj())
+            # Now L has shape (chi_right, chi_right)
+        
+        # At the end, L should be a 1x1 matrix; squeeze it to obtain a scalar.
+        norm = L.squeeze()
+        return norm
 
 def tensor_to_mps(psi_coeff: np.ndarray):
     # psi_coeff: a tensor of shape (4, 4, ..., 4) with num_sites entries
@@ -96,4 +112,12 @@ def get_random_mps(L,bond_dimensions):
     A = np.random.normal(loc = 0.0, scale = 1.0,size = (bond_dimensions,d,1))
     mps.append(A)
 
+
+    norm = mps_norm(mps,einsum_eval=EinsumEvaluator(None))
+
+    mps[0] = mps[0] * 1/np.sqrt(norm)
+
     return mps
+
+
+

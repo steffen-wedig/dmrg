@@ -10,7 +10,7 @@ D= 10
 J = 1.0
 h=0.5
 mps = create_neel_mps(L,D)
-einsum_eval = EinsumEvaluator()
+einsum_eval = EinsumEvaluator(None)
 
 mpo = initialize_transverse_ising_mpo(L,J,h)
 R_env = [None] * (L+1)

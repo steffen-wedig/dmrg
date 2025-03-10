@@ -26,6 +26,9 @@ def get_initial_states_from_mol_orb_occ(mo_occ):
     return np.hstack(occs)
 
 
+
+
+
 def single_site_operators():
     # Spin up creation operator
     c_dag_up = np.array([
@@ -55,7 +58,6 @@ def single_site_operators():
     ])
 
     return c_dag_up, c_up, c_dag_down, c_down 
-
 
 
 def get_operators_for_spin(spin):

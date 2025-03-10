@@ -14,7 +14,7 @@ def update_right_environment(mps_i, mpo_i, R_env_i_next,einsum_eval: EinsumEvalu
     # al : i, al' : j, bl : k
     # al-1: l, al-1': m , bl-1:n
     # sigmal o: , sigmal': p
-    print(mpo_i.shape)
+    #print(mpo_i.shape)
     R_env_i = einsum_eval(
         "mpj,nkop,ijk,loi->mln", mps_i, mpo_i, R_env_i_next, mps_i.conj()
         )
@@ -47,8 +47,8 @@ def precompute_right_environment(mps, mpo,einsum_eval: EinsumEvaluator):
     R_env[L] = np.array(1.0).reshape((1, 1, 1))
 
     for i in range(L - 1, 1, -1):
-        print(i)
-        print(mps[i].shape)
+        #print(i)
+        #print(mps[i].shape)
         R_env[i] = update_right_environment(mps[i],mpo[i],R_env[i+1],einsum_eval)
     return R_env
 
@@ -63,7 +63,7 @@ def right_to_left_sweep(mps, mpo, L_env, R_env,einsum_eval):
 
     evs = []
     for i in range(L - 1, 0, -1):
-        print(f"Step {i}")
+        #print(f"Step {i}")
 
         M = combine_sites(mps[i - 1], mps[i],einsum_eval)
 
@@ -116,7 +116,7 @@ def left_to_right_sweep(mps, mpo, L_env, R_env,einsum_eval : EinsumEvaluator):
     L = len(mps)
     Evs = []
     for i in range(0,L-1):
-        print(f"Step {i}")
+        #print(f"Step {i}")
         M = combine_sites(mps[i], mps[i+1],einsum_eval)
         dims = M.shape
 
