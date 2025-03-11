@@ -6,7 +6,7 @@ from dmrg.einsum_optimal_paths import EinsumEvaluator
 
 def create_local_mpo_tensors(one_el_integrals,two_el_integrals,N_sites,dim=4):
     
-    total_N_ops = 2*N_sites **2 + 4* N_sites**4
+    total_N_ops = 2*N_sites **2 #+ 4* N_sites**4
 
     mpo = np.zeros(shape = (N_sites, total_N_ops,dim,dim))
 
@@ -21,16 +21,16 @@ def create_local_mpo_tensors(one_el_integrals,two_el_integrals,N_sites,dim=4):
     #Spin down 1 e terms 
     mpo = add_one_electron_interactions(mpo,one_e_indices,one_el_integrals,N_sites**2,"down")
 
-    two_e_indices = np.ndindex(two_el_integrals.shape)
-
-    mpo = add_two_eletron_interactions(mpo,two_e_indices,two_el_integrals,start = 2*(N_sites**2),sigma_spin="up",tau_spin="up")
-
-    mpo = add_two_eletron_interactions(mpo,two_e_indices,two_el_integrals,start = 2*(N_sites**2)+N_sites**4,sigma_spin="up",tau_spin="down")
-
-    mpo = add_two_eletron_interactions(mpo,two_e_indices,two_el_integrals,start = 2*(N_sites**2)+2*(N_sites**4),sigma_spin="down",tau_spin="up")
-
-    mpo = add_two_eletron_interactions(mpo,two_e_indices,two_el_integrals,start = 2*(N_sites**2)+3*(N_sites**4),sigma_spin="down",tau_spin="down")
-
+    #two_e_indices = np.ndindex(two_el_integrals.shape)
+#
+    #mpo = add_two_eletron_interactions(mpo,two_e_indices,two_el_integrals,start = 2*(N_sites**2),sigma_spin="up",tau_spin="up")
+#
+    #mpo = add_two_eletron_interactions(mpo,two_e_indices,two_el_integrals,start = 2*(N_sites**2)+N_sites**4,sigma_spin="up",tau_spin="down")
+#
+    #mpo = add_two_eletron_interactions(mpo,two_e_indices,two_el_integrals,start = 2*(N_sites**2)+2*(N_sites**4),sigma_spin="down",tau_spin="up")
+#
+    #mpo = add_two_eletron_interactions(mpo,two_e_indices,two_el_integrals,start = 2*(N_sites**2)+3*(N_sites**4),sigma_spin="down",tau_spin="down")
+#
 
     return mpo
 
@@ -54,6 +54,10 @@ def add_one_electron_interactions(mpo,index_array,one_electron_integrals, start,
         mpo[creation_op_site_index,interaction_counter,:,:] = mpo[creation_op_site_index,interaction_counter,:,:] @ c_dag_sigma
 
         annihilation_op_site_index = indices[1]
+
+        for i in range(min(creation_op_site_index,annihilation_op_site_index), max(creation_op_site_index, annihilation_op_site_index)):
+            mpo[i,interaction_counter,:,:] = mpo[i,interaction_counter,:,:] @ F
+
 
         mpo[annihilation_op_site_index,interaction_counter,:,:] = mpo[annihilation_op_site_index,interaction_counter,:,:]  @c_sigma
 

@@ -71,14 +71,3 @@ def get_operators_for_spin(spin):
         return c_dag_down, c_down
 
 
-
-
-
-def construct_initial_one_state_hamiltonian(h1e, h2e):
-    c_dag_up, c_up, c_dag_down, c_down = single_site_operators()
-
-    n_up = np.dot(c_dag_up, c_up)
-    n_down = np.dot(c_dag_down, c_down)
-
-    H = h1e * (n_up+n_down) + h2e * np.dot(n_up, n_down)
-

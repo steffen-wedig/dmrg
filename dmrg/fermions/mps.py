@@ -95,7 +95,7 @@ def get_mps_from_occupation_numbers(occupation_numbers, bond_dimensions):
 
 def get_random_mps(L,bond_dimensions):
 
-    d = 4 # dimension of the local Hilbert space
+    d = 2 # dimension of the local Hilbert space
     mps = []
 
 
