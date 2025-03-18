@@ -1,13 +1,13 @@
 from dmrg.fermions.mpo import create_local_mpo_tensors, reformat_mpo, reformat_mpo_sparse
 from pyscf import gto, scf, ao2mo
 import numpy as np
-from dmrg.initialization import single_site_operators
+from dmrg.utils import single_site_operators
 from dmrg.fermions.mps import get_mps_from_occupation_numbers, get_random_mps, mps_norm
-from dmrg.einsum_optimal_paths import EinsumEvaluator
+from dmrg.einsum_evaluation import EinsumEvaluator
 
-from dmrg.heisenberg_chain.mps import create_neel_mps, right_canonicalize
-from dmrg.heisenberg_chain.mpo import initialize_heisenberg_mpo
-from dmrg.heisenberg_chain.sweep import precompute_right_environment, right_to_left_sweep, left_to_right_sweep
+from dmrg.spin_systems.mps import create_neel_mps, right_canonicalize
+from dmrg.spin_systems.mpo import initialize_heisenberg_mpo
+from dmrg.dmrg.sweep import precompute_right_environment, right_to_left_sweep, left_to_right_sweep
 
 
 N_orbitals = 4
@@ -23,11 +23,11 @@ mpo = reformat_mpo_sparse(mpo)
 
 #remove the zero elementsö
 
-from dmrg.initialization import get_initial_states_from_mol_orb_occ
+from dmrg.utils import get_initial_states_from_mol_orb_occ
 mps = get_random_mps(N_orbitals,500)
 
 
-einsum_eval = EinsumEvaluator(None)
+einsum_eval = EinsumEvaluator()
 print(mps_norm(mps,einsum_eval))
 
 L = len(mps)

@@ -1,8 +1,8 @@
 import numpy as np
-from dmrg.initialization import single_site_operators, get_operators_for_spin
+from dmrg.utils import single_site_operators, get_operators_for_spin
 from numpy.linalg import matrix_power
 import sparse
-from dmrg.einsum_optimal_paths import EinsumEvaluator
+from dmrg.einsum_evaluation import EinsumEvaluator
 
 def create_local_mpo_tensors(one_el_integrals,two_el_integrals,N_sites,dim=4):
     
@@ -181,9 +181,7 @@ def contract_expectation(mps, mpo,einsum_eval : EinsumEvaluator):
     L = np.array([[[1.0]]]) # shape (1, 1, 1)
     
     # Loop over each site
-    i=0
     for A, W in zip(mps, mpo):
-        print(i)
         # A has shape (chi_left, d, chi_right)
         # W has shape (w_left, w_right, d, d)
         # L has shape (chi_left, chi_left, w_left)
@@ -194,12 +192,20 @@ def contract_expectation(mps, mpo,einsum_eval : EinsumEvaluator):
         #   L[a, b, p] · A[a, s, i] · A*[b, s', j] · W[p, q, s, s']
         #
         # The resulting tensor L_new[i, j, q] is computed as:
-        print(type(W), type(A),type(L))
         L = einsum_eval("ojlm,nli,npo,pmk->ikj", W, A.conj(),L,A)
-
-        i = i+1
         # Now, L has shape (chi_right, chi_right, w_right)
     
     # At the end, L should have shape (1, 1, 1) (i.e., a scalar wrapped in a tensor)
     energy = L.squeeze() 
     return energy
+
+
+
+
+def initialize_empty_mpo(N_sites,N_op_states,d_dim):
+    
+    mpo = []
+    for  _ in range(0,N_sites):
+        W = np.zeros((N_op_states,N_op_states,d_dim,d_dim))
+        mpo.append(W)
+    return mpo

@@ -60,14 +60,14 @@ def initialize_transverse_ising_mpo(L, J, h):
 
         Ws = []
         # First vector Ws[0] = [1 , X , -g Z]
-        w = np.zeros((1,3,d,d),dtype=complex)
+        w = np.zeros((1,3,d,d))
         w[0,0] = id
         w[0,1] = sx
         w[0,2] = - h * sz
         Ws.append(w)
         
         # W[i] matrix
-        w = np.zeros((3,3,d,d),dtype=complex)
+        w = np.zeros((3,3,d,d))
         # top row: 1 X -g Z
         w[0,0] = id
         w[0,1] = sx
@@ -80,7 +80,7 @@ def initialize_transverse_ising_mpo(L, J, h):
         for i in range(1,L-1):
             Ws.append(w)
         # Last vector W[L-1]^T = [-g Z, -J X, 1]^T
-        w = np.zeros((3,1,d,d),dtype=complex)
+        w = np.zeros((3,1,d,d))
         w[0,0] = - h * sz
         w[1,0] = - J * sx
         w[2,0] = id

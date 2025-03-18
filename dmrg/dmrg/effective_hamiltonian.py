@@ -1,9 +1,7 @@
 import numpy as np 
 
 from scipy.sparse.linalg import LinearOperator
-
-from scipy.sparse import linalg
-from dmrg.einsum_optimal_paths import EinsumEvaluator
+from dmrg.einsum_evaluation import EinsumEvaluator
 
 
 def effective_hamiltonian_action(psi, L_env, mpo, R_env, dims,einsum_eval):
@@ -52,7 +50,7 @@ def construct_effective_hamiltonian_operator(L_env, mpo, R_env, dims, einsum_eva
         return effective_hamiltonian_action(psi, L_env, mpo, R_env, dims,einsum_eval)
     
     # Create and return the LinearOperator.
-    return LinearOperator((N, N), matvec=matvec, dtype=complex)
+    return LinearOperator((N, N), matvec=matvec)
 
 
 

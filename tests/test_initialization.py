@@ -1,6 +1,6 @@
 import numpy as np
-from dmrg.initialization import single_site_operators
-from dmrg.heisenberg_chain.mps import create_neel_mps, right_canonicalize
+from dmrg.utils import single_site_operators
+from dmrg.spin_systems.mps import create_neel_mps, right_canonicalize
 import numpy as np
 import sparse
 from dmrg.fermions.mpo import reformat_mpo, reformat_mpo_sparse, create_local_mpo_tensors

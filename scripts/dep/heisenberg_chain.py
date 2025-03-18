@@ -1,10 +1,12 @@
 import numpy as np
 
-from dmrg.heisenberg_chain.mps import create_neel_mps, right_canonicalize
-from dmrg.heisenberg_chain.mpo import initialize_heisenberg_mpo
-from dmrg.heisenberg_chain.sweep import precompute_right_environment, right_to_left_sweep, left_to_right_sweep
+from dmrg.spin_systems.mps import create_neel_mps 
+from dmrg.spin_systems.mpo import initialize_heisenberg_mpo
+from dmrg.dmrg.sweep import precompute_right_environment, right_to_left_sweep, left_to_right_sweep
+from dmrg.dmrg.mps import right_canonicalize
 
-from dmrg.einsum_optimal_paths import EinsumEvaluator
+
+from dmrg.einsum_evaluation import EinsumEvaluator
 # Initialize an MPS for a chain of L sites
 L = 20  # for example
 D= 5
@@ -15,7 +17,7 @@ mps = create_neel_mps(L,D)
 mpo = initialize_heisenberg_mpo(L,J)
 R_env = [None] * (L+1)
 
-einsum_eval = EinsumEvaluator(None)
+einsum_eval = EinsumEvaluator()
 
 mps = right_canonicalize(mps, einsum_eval)
 

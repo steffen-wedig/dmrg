@@ -1,8 +1,9 @@
 from pyscf import gto, scf, ao2mo
 import numpy as np
 from pyscf import fci
-from dmrg.einsum_optimal_paths import EinsumEvaluator
+from dmrg.einsum_evaluation import EinsumEvaluator
 
+from dmrg.fermions.op_construction import construct_molecular_mpo, convert_mpo_to_sparse
 
 from dmrg.fermions.mps import tensor_to_mps
 from dmrg.fermions.mpo import create_local_mpo_tensors, reformat_mpo_sparse, contract_expectation
@@ -19,7 +20,7 @@ def test_fermionic_mpo():
     
     mol = gto.M(
         atom = H_chain_string,  # Adjust bond length if necessary
-        basis = 'cc-pVDZ',
+        basis = '3-21G',
         symmetry = False
     )
     mf = scf.RHF(mol)
@@ -32,6 +33,9 @@ def test_fermionic_mpo():
 
     fci_h2 = fci.FCI(mf)
     e_fci, ci_coeff = fci_h2.kernel()
+
+    print(e_fci)
+
 
     print(ci_coeff)
 
@@ -49,20 +53,12 @@ def test_fermionic_mpo():
 
         psi_coeff[index_vec] = ci_coeff[coef_indices]
 
-    mps = tensor_to_mps(psi_coeff)
+    mps = tensor_to_mps(psi_coeff,D=50)
 
-#   
+    mpo = construct_molecular_mpo(h1e,h2e)
 
+    mpo = convert_mpo_to_sparse(mpo)
 
-    #print(h1e.shape)
-    mpo = create_local_mpo_tensors(h1e,h2e,N_sites=N_orbitals)
-
-    #Reformat the MPO
-    mpo = reformat_mpo_sparse(mpo)
-
-
-    for mpo_loc in mpo:
-        print(mpo_loc.shape)
 
     einsum_eval = EinsumEvaluator("sparse")
     
@@ -72,7 +68,7 @@ def test_fermionic_mpo():
     mps[0] = mps[0] * 1/np.sqrt(mps_n)
 
     mps_n2 = mps_norm(mps,einsum_eval)
-    print(mps_n)
+    
     print(mps_n2)
 
 

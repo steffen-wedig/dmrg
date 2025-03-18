@@ -1,5 +1,5 @@
 import numpy as np
-from dmrg.einsum_optimal_paths import EinsumEvaluator
+from dmrg.einsum_evaluation import EinsumEvaluator
 
 
 def mps_norm(mps,einsum_eval):
@@ -18,7 +18,7 @@ def mps_norm(mps,einsum_eval):
         norm = L.squeeze()
         return norm
 
-def tensor_to_mps(psi_coeff: np.ndarray):
+def tensor_to_mps(psi_coeff: np.ndarray, D):
     # psi_coeff: a tensor of shape (4, 4, ..., 4) with num_sites entries
     num_sites = psi_coeff.ndim
     mps = []
@@ -40,7 +40,7 @@ def tensor_to_mps(psi_coeff: np.ndarray):
 
 
           # Truncate the SVD to the largest max_bond_dim singular values
-        chi = min(50, len(s))
+        chi = min(D, len(s))
         U = U[:, :chi]
         s = s[:chi]
         Vh = Vh[:chi, :]
@@ -93,13 +93,9 @@ def get_mps_from_occupation_numbers(occupation_numbers, bond_dimensions):
 
     return mps
 
-def get_random_mps(L,bond_dimensions):
+def get_random_mps(L,bond_dimensions,d):
 
-    d = 2 # dimension of the local Hilbert space
     mps = []
-
-
-
     A = np.random.normal(loc = 0.0, scale = 1.0, size = (1,d,bond_dimensions))
     mps.append(A)
 
@@ -111,9 +107,8 @@ def get_random_mps(L,bond_dimensions):
     
     A = np.random.normal(loc = 0.0, scale = 1.0,size = (bond_dimensions,d,1))
     mps.append(A)
-
-
-    norm = mps_norm(mps,einsum_eval=EinsumEvaluator(None))
+    
+    norm = mps_norm(mps,einsum_eval=EinsumEvaluator())
 
     mps[0] = mps[0] * 1/np.sqrt(norm)
 
