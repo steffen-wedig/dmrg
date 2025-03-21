@@ -33,6 +33,8 @@ class FiniteStateMachine:
     @staticmethod
     def get_op_chunks(operators: Sequence[Operator]) -> Sequence[OperatorChunk]:
 
+
+        # This function separates an operator string into chunks. This is necesary because two operators in a string can be on the same site, so they have to be placed into the same local mpo matrix.
         op_chunks = []
 
         running_chunk = [operators[0]]

@@ -15,7 +15,7 @@ plt.rcParams.update(
     }
 )
 
-def plot_energ_minimization_in_sweep(dmrg_energies: list[float], reference : float):
+def plot_energy_minimization_in_sweep(dmrg_energies: list[float], reference : float):
 
 
     N_steps = len(dmrg_energies)

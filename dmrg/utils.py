@@ -1,4 +1,5 @@
 import numpy as np
+from dmrg.einsum_evaluation import EinsumEvaluator
 
 
 def get_state_from_occ(occ):
@@ -100,3 +101,28 @@ def get_jordan_wigner_transformation_matrix(d_dim):
         return np.array([[ 1.,  0.,  0.,  0.], [ 0., -1.,  0.,  0.],  [ 0. , 0. , -1. , 0.],  [ 0. , 0. , 0. , 1.]])
     else:
         raise ValueError("JW transformation only implemented for Fock space dimensions 2 and 4 ")
+    
+
+
+def contract_expectation(mps, mpo,einsum_eval : EinsumEvaluator):
+    # Initialize left environment as a scalar wrapped in a tensor of shape (1, 1, 1)
+    L = np.array([[[1.0]]]) # shape (1, 1, 1)
+    
+    # Loop over each site
+    for A, W in zip(mps, mpo):
+        # A has shape (chi_left, d, chi_right)
+        # W has shape (w_left, w_right, d, d)
+        # L has shape (chi_left, chi_left, w_left)
+        #
+        # We want to update L to a new tensor L_new with shape (chi_right, chi_right, w_right)
+        #
+        # Contraction (using explicit index labels):
+        #   L[a, b, p] · A[a, s, i] · A*[b, s', j] · W[p, q, s, s']
+        #
+        # The resulting tensor L_new[i, j, q] is computed as:
+        L = einsum_eval("ojlm,nli,npo,pmk->ikj", W, A.conj(),L,A)
+        # Now, L has shape (chi_right, chi_right, w_right)
+    
+    # At the end, L should have shape (1, 1, 1) (i.e., a scalar wrapped in a tensor)
+    energy = L.squeeze() 
+    return energy

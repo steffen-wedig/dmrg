@@ -1,6 +1,6 @@
 from pyscf import ao2mo, gto, scf, fci
 import numpy as np
-from dmrg.fermions.mps import tensor_to_mps
+from dmrg.dmrg.mps import tensor_to_mps
 
 def get_H2_integrals():
     mol = gto.M(
@@ -91,4 +91,4 @@ def get_fci_mps(D):
 
     mps = tensor_to_mps(psi_coeff,D)
 
-    return mps
+    return e_fci, mps

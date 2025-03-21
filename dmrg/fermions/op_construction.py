@@ -7,12 +7,21 @@ from dmrg.fermions.op_indexing import (
     collect_numpy_arrays,
 )
 from dmrg.fermions.finite_state_machine import FiniteStateMachine
-from dmrg.fermions.mpo import initialize_empty_mpo
 from dmrg.utils import (
     get_jordan_wigner_transformation_matrix,
 )
 from typing import Sequence
 from itertools import pairwise
+
+
+def initialize_empty_mpo(N_sites,N_op_states,d_dim):
+    
+    mpo = []
+    for  _ in range(0,N_sites):
+        W = np.zeros((N_op_states,N_op_states,d_dim,d_dim))
+        mpo.append(W)
+    return mpo
+
 
 
 def add_jordan_wigner_matrices(mpo, op_tree: OperatorTree):
@@ -39,9 +48,8 @@ def construct_molecular_mpo(h1e, h2e):
 
     N_sites = h1e.shape[0]
     d_dim = 4  # Dimension of the local Fock Space
-    op_tree = OperatorTree(N_sites)
+    op_tree = OperatorTree(N_sites) # Operator tree is used to retrieve the correct indices for each operator. ( Indices in the context of the finite state machine )
     N_op_states = op_tree.get_total_N_ops()
-    print(N_op_states)
     # Initialize empty mpo
 
     mpo = initialize_empty_mpo(N_sites, N_op_states, d_dim)
@@ -51,6 +59,7 @@ def construct_molecular_mpo(h1e, h2e):
 
     fsm = FiniteStateMachine(op_tree)
 
+    # Here, we add all possible combinations of spins into the mpo matrix
     add_one_electron_integrals(mpo, h1e, "up", fsm)
     add_one_electron_integrals(mpo, h1e, "down", fsm)
 
@@ -58,13 +67,12 @@ def construct_molecular_mpo(h1e, h2e):
     add_two_electron_integrals(mpo, h2e, "up", "down", fsm)
     add_two_electron_integrals(mpo, h2e, "down", "up", fsm)
     add_two_electron_integrals(mpo, h2e, "down", "down", fsm)
-#
 
+    #Remove the array padding in the first and last mpo matrices, because these should be vectors
     shape_except_last = list(mpo[0].shape)
     shape_except_last[0] -= 1
     assert np.allclose(mpo[0][:-1,:,:,:],np.zeros(shape=shape_except_last))
     mpo[0] = np.expand_dims(mpo[0][-1,:,:,:],0)
-
 
     shape_except_last = list(mpo[-1].shape)
     shape_except_last[1] -= 1
